@@ -112,7 +112,7 @@ namespace ConsoleAppBattleships
                         }
                         break;
                     case "2":
-
+                        About();
                         break;
                     case "3":
 
@@ -126,6 +126,46 @@ namespace ConsoleAppBattleships
 
 
             } while (option != "3");
+
+            void About()
+            {
+                Console.Clear();
+                WriteBorder(border * 2);
+                WriteMess(border * 2, "Każdy z graczy posiada plansze o wielkości 10x10");
+                WriteMess(border * 2, "Kolumny są oznaczone poprzez współrzędne literami od A do J i liczbami 1 do 10.");
+                WriteMess(border * 2, "Statki ustawiane są w pionie lub poziomie, w taki sposób,");
+                WriteMess(border * 2, "aby nie stykały się one ze sobą ani bokami, ani rogami.");
+                WriteBorder(border * 2);
+                WriteMess(border * 2, "Występują 4 rodzaje okrętów:");
+                WriteMess(border * 2, Ship.Type.Battleship.ToPL() + " zajmujący 4 pola");
+                WriteMess(border * 2, Ship.Type.Cruiser.ToPL() + " zajmujący 3 pola");
+                WriteMess(border * 2, Ship.Type.Destroyer.ToPL() + " zajmujący 2 pola");
+                WriteMess(border * 2, Ship.Type.Submarine.ToPL() + " zajmujący 1 pole");
+                WriteBorder(border * 2);
+                WriteMess(border * 2, "Strzały oddawane są naprzemiennie, poprzez podanie współrzędnych pola (np. B5).");
+                WriteMess(border * 2, "W przypadku strzału trafionego, gracz kontynuuje strzelanie aż do momentu chybienia.");
+                WriteMess(border * 2, "Zatopienie statku ma miejsce wówczas, gdy gracz odgadnie położenie całego statku.");
+                WriteMess(border * 2, "O chybieniu gracz informowany jest komunikatem „pudło”,");
+                WriteMess(border * 2, "o trafieniu „trafiony” lub „trafiony i zatopiony”.");
+                WriteMess(border * 2, "Zatopiony statek powoduje, pola wokół niego oznaczane są jako ostrzelane");
+                WriteMess(border * 2, "Wygrywa ten, kto pierwszy zatopi wszystkie statki przeciwnika.");
+                WriteBorder(border * 2);
+                WriteMess(border * 2, "Oznaczenia pól:");
+                WriteMess(border * 2, " " + emptySquare + " - Puste pole");
+                WriteMess(border * 2, " " + missSquare + " - Pole w które oddano nietrafiony strzał");
+                WriteMess(border * 2, " " + hitSquare + " - Pole w które oddano trafiony strzał");
+                WriteMess(border * 2, " " + shipSquare + " - Pole reprezentujące statek");
+                WriteMess(border * 2, " " + reservedSquare + " - Pole zarezerwowane przez statek, w tym miejscu nie może znajdować się inny statek");
+                WriteMess(border * 2, "Przykładowa plansza:");
+               // WriteBorder(border * 2);
+                CreateEmptyBoard(ComputerBoard);
+                RandomizeShips(ComputerShips, ComputerBoard);
+                DrawBoard(ComputerBoard);
+                WriteBorder(border * 2);
+                WriteMess(border * 2, "Kliknij dowolny przycisk aby wrócić do menu");
+                WriteBorder(border * 2);
+                Console.ReadKey();
+            }
 
             bool AllShipsReady(Ship[] ships)
             {
