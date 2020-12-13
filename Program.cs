@@ -57,7 +57,10 @@ namespace ConsoleAppBattleships
 
             string option,option2,option3="";
             string[,] PlayerBoard = new string[boardSize, boardSize];
-            string[,] ComputerBoard = new string[boardSize, boardSize];        
+            string[,] ComputerBoard = new string[boardSize, boardSize];
+
+            Battleships.BoardState [,] PlayerBoardState = new Battleships.BoardState[boardSize, boardSize];
+            Battleships.BoardState [,] ComputerBoardState = new Battleships.BoardState[boardSize, boardSize];
 
             do
             {
@@ -86,19 +89,27 @@ namespace ConsoleAppBattleships
                         {
                             case "1":
                                 CreateEmptyBoard(PlayerBoard);
-                                PlaceShipsOnBoard(PlayerShips, PlayerBoard);
+                                Battleships.CreateEmptyBoard(PlayerBoardState);
+                                Battleships.ResetShips(PlayerShips);
+                                Battleships.ResetShips(ComputerShips);
+                                PlaceShipsOnBoard(PlayerShips, PlayerBoard,PlayerBoardState);
                                 if(AllShipsReady(PlayerShips))
                                 {
                                     CreateEmptyBoard(ComputerBoard);
-                                    RandomizeShips(ComputerShips, ComputerBoard);
+                                    Battleships.CreateEmptyBoard(ComputerBoardState);
+                                    Battleships.RandomizeShips(ComputerShips, ComputerBoardState);
                                     StartGame();
                                 }
                                 break;
                             case "2":
+                                Battleships.ResetShips(PlayerShips);
+                                Battleships.ResetShips(ComputerShips);
                                 CreateEmptyBoard(PlayerBoard);
+                                Battleships.CreateEmptyBoard(PlayerBoardState);
                                 CreateEmptyBoard(ComputerBoard);
-                                RandomizeShips(PlayerShips, PlayerBoard);
-                                RandomizeShips(ComputerShips, ComputerBoard);
+                                Battleships.CreateEmptyBoard(ComputerBoardState);
+                                Battleships.RandomizeShips(PlayerShips,PlayerBoardState);
+                                Battleships.RandomizeShips(ComputerShips, ComputerBoardState);
                                 StartGame();
                                 break;
                             case "3":
@@ -159,8 +170,9 @@ namespace ConsoleAppBattleships
                 WriteMess(border * 2, "Przykładowa plansza:");
                // WriteBorder(border * 2);
                 CreateEmptyBoard(ComputerBoard);
-                RandomizeShips(ComputerShips, ComputerBoard);
-                DrawBoard(ComputerBoard);
+                Battleships.CreateEmptyBoard(ComputerBoardState);
+                Battleships.RandomizeShips(ComputerShips, ComputerBoardState);
+                DrawBoard(ComputerBoard, ComputerBoardState);
                 WriteBorder(border * 2);
                 WriteMess(border * 2, "Kliknij dowolny przycisk aby wrócić do menu");
                 WriteBorder(border * 2);
@@ -175,7 +187,6 @@ namespace ConsoleAppBattleships
                         return false;
                 }
                 return true;
-
             }
 
             void CreateEmptyBoard(string[,] board)
@@ -193,89 +204,9 @@ namespace ConsoleAppBattleships
                         board[i, j] = emptySquare;
                     }
                 }
-            }
+            }           
 
-            void ClearReservedSquares(string[,] board)
-            {
-                for (int i = 1; i < boardSize; i++)
-                {
-                    for (int j = 1; j < boardSize; j++)
-                    {
-                        if (board[i, j] == reservedSquare)
-                            board[i, j] = emptySquare;
-                    }
-                }
-            }
-
-            bool CheckPlaceOnBoard(Ship ship, string[,] board, int x, int y, bool info)
-            {
-                switch (ship.position)
-                {
-                    case Ship.Position.Vertical: //zamieniome
-
-                        for (int i = 0; i < (int)ship.type; i++)
-                        {
-                            if (x + i < boardSize && x + i >= 1)
-                            {
-                                if (board[x + i, y] == reservedSquare ||
-                                    board[x + i, y] == shipSquare)
-                                {
-                                    if (info)
-                                    {
-                                        WriteBorder(border);
-                                        WriteMess(border, " Za blisko innego statku, wybierz ponownie");
-                                        WriteBorder(border);
-                                    }
-                                    return false;
-                                }
-                            }
-                            else
-                            {
-                                if (info)
-                                {
-                                    WriteBorder(border);
-                                    WriteMess(border, " Statek poza planszą, wybierz ponownie");
-                                    WriteBorder(border);
-                                }
-                                return false;
-                            }
-                        }
-                        break;
-                    case Ship.Position.Horizontal:
-
-                        for (int i = 0; i < (int)ship.type; i++)
-                        {
-                            if (y + i < boardSize && y + i >= 1)
-                            {
-                                if (board[x, y + i] == reservedSquare ||
-                                    board[x, y + i] == shipSquare)
-                                {
-                                    if (info)
-                                    {
-                                        WriteBorder(border);
-                                        WriteMess(border, " Za blisko innego statku, wybierz ponownie");
-                                        WriteBorder(border);
-                                    }
-                                    return false;
-                                }
-                            }
-                            else
-                            {
-                                if (info)
-                                {
-                                    WriteBorder(border);
-                                    WriteMess(border, " Statek poza planszą, wybierz ponownie");
-                                    WriteBorder(border);
-                                }
-                                return false;
-                            }
-                        }
-                        break;
-                }
-                return true;
-            }
-
-            void DrawBoard(string[,] board)
+            void DrawBoard(string[,] board,Battleships.BoardState[,] boardStates)
             {
                 for (int i = 0; i < boardSize; i++)
                 {
@@ -290,31 +221,84 @@ namespace ConsoleAppBattleships
                         {
                             Console.BackgroundColor = ConsoleColor.DarkBlue;
 
-                            switch (board[i, j])
+                            switch (boardStates[i, j])
                             {
-                                case shipSquare:
+                                case Battleships.BoardState.Ship:
                                     Console.ForegroundColor = ConsoleColor.Red;
-                                    Console.Write(board[i, j] + " ");
+                                    Console.Write(shipSquare + " ");
                                     break;
 
-                                case emptySquare:
+                                case Battleships.BoardState.Empty:
                                     Console.ForegroundColor = ConsoleColor.White;
-                                    Console.Write(board[i, j] + " ");
+                                    Console.Write(emptySquare + " ");
                                     break;
 
-                                case reservedSquare:
+                                case Battleships.BoardState.Reserved:
                                     Console.ForegroundColor = ConsoleColor.DarkYellow;
-                                    Console.Write(board[i, j] + " ");
+                                    Console.Write(reservedSquare + " ");
                                     break;
 
-                                case missSquare:
+                                case Battleships.BoardState.Miss:
                                     Console.ForegroundColor = ConsoleColor.DarkYellow;
-                                    Console.Write(board[i, j] + " ");
+                                    Console.Write(missSquare + " ");
                                     break;
 
-                                case hitSquare:
+                                case Battleships.BoardState.Hit:
                                     Console.ForegroundColor = ConsoleColor.Red;
+                                    Console.Write(hitSquare + " ");
+                                    break;
+
+                                default:
+                                    Console.ResetColor();
                                     Console.Write(board[i, j] + " ");
+                                    break;
+                            }
+                        }
+                    }
+                    Console.WriteLine();
+                }
+                Console.ResetColor();
+            }
+            void DrawHiddenBoard(string[,] board, Battleships.BoardState[,] boardStates)
+            {
+                for (int i = 0; i < boardSize; i++)
+                {
+                    for (int j = 0; j < boardSize; j++)
+                    {
+                        if (j == 0 && i != boardSize - 1)
+                        {
+                            Console.ResetColor();
+                            Console.Write(board[i, j] + "  ");
+                        }
+                        else
+                        {
+                            Console.BackgroundColor = ConsoleColor.DarkBlue;
+
+                            switch (boardStates[i, j])
+                            {
+                                case Battleships.BoardState.Ship:
+                                    Console.ForegroundColor = ConsoleColor.White;
+                                    Console.Write(emptySquare + " ");
+                                    break;
+
+                                case Battleships.BoardState.Empty:
+                                    Console.ForegroundColor = ConsoleColor.White;
+                                    Console.Write(emptySquare + " ");
+                                    break;
+
+                                case Battleships.BoardState.Reserved:
+                                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                                    Console.Write(reservedSquare + " ");
+                                    break;
+
+                                case Battleships.BoardState.Miss:
+                                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                                    Console.Write(missSquare + " ");
+                                    break;
+
+                                case Battleships.BoardState.Hit:
+                                    Console.ForegroundColor = ConsoleColor.Red;
+                                    Console.Write(hitSquare + " ");
                                     break;
 
                                 default:
@@ -329,210 +313,8 @@ namespace ConsoleAppBattleships
                 Console.ResetColor();
             }
 
-            void Game(bool playerTurn)
-            {
-                ClearReservedSquares(PlayerBoard);
-                CreateEmptyBoard(ComputerBoard);
-                bool endGame = false;
-                do
-                {
-                    Console.Clear();
-                    WriteBorder(border);
-                    WriteMess(border, " Twoja plansza");
-                    WriteBorder(border);
-                    DrawBoard(PlayerBoard);
-                    WriteBorder(border);
-                    WriteMess(border, " Plansza przeciwnkia");
-                    WriteBorder(border);
-                    DrawBoard(ComputerBoard);
-                    if (playerTurn)
-                    {
-                        WriteBorder(border);
-                        WriteMess(border, " Podaj koordynaty");
-                        WriteBorder(border);
-                        Point hit = SetCoordinates();
-                        if (ComputerBoard[(int)hit.X, (int)hit.Y] == hitSquare || ComputerBoard[(int)hit.X, (int)hit.Y] == missSquare)
-                        {
-                            WriteBorder(border);
-                            WriteMess(border, " Już tam strzelałeś !!!");
-                            WriteMess(border, " Zmarnowany strzał " + ((char)(64 + hit.Y)).ToString() + hit.X.ToString());
-                            WriteBorder(border);
-                            playerTurn = false;
-                        }
-                        else
-                        {
-                            foreach (Ship s in ComputerShips)
-                            {
-                                foreach (Point p in s.Coordinates)
-                                {
-                                    if (p == hit)
-                                    {
-                                        s.Hit();
-                                        WriteBorder(border);
-                                        WriteMess(border, " Trafiony " + ((char)(64 + hit.Y)).ToString() + hit.X.ToString());
-                                        if (!s.IsAlive)
-                                        {
-                                            WriteMess(border, " i zatopiony " + s.type.ToPL());
-                                            switch (s.position)
-                                            {
-                                                case Ship.Position.Vertical:
-                                                    for (int i = -1; i < (int)s.type + 1; i++)
-                                                    {
-                                                        for (int j = -1; j < 2; j++)
-                                                        {
-                                                            if (s.StartPos.X + i < boardSize && s.StartPos.Y + j < boardSize
-                                                                && s.StartPos.X + i >= 1 && s.StartPos.Y + j >= 1)
-                                                            {
-                                                                ComputerBoard[(int)s.StartPos.X + i, (int)s.StartPos.Y + j] = missSquare;
-                                                            }
-                                                        }
-                                                    }
-                                                    foreach (Point p2 in s.Coordinates)
-                                                    {
-                                                        ComputerBoard[(int)p2.X, (int)p2.Y] = hitSquare;
-                                                    }
-                                                    break;
-                                                case Ship.Position.Horizontal:
-                                                    for (int i = -1; i < 2; i++)
-                                                    {
-                                                        for (int j = -1; j < (int)s.type + 1; j++)
-                                                        {
-                                                            if (s.StartPos.X + i < boardSize && s.StartPos.Y + j < boardSize
-                                                                && s.StartPos.X + i >= 1 && s.StartPos.Y + j >= 1)
-                                                            {
-                                                                ComputerBoard[(int)s.StartPos.X + i, (int)s.StartPos.Y + j] = missSquare;
-                                                            }
-                                                        }
-                                                    }
-                                                    foreach (Point p2 in s.Coordinates)
-                                                    {
-                                                        ComputerBoard[(int)p2.X, (int)p2.Y] = hitSquare;
-                                                    }
-                                                    break;
-                                            }
-                                        }
-                                        WriteBorder(border);
-                                        ComputerBoard[(int)hit.X, (int)hit.Y] = hitSquare;
-                                        playerTurn = true;
-                                    }
-                                }
-                            }
-                            if (ComputerBoard[(int)hit.X, (int)hit.Y] == emptySquare)
-                            {
-                                WriteBorder(border);
-                                WriteMess(border, " Pudło " + ((char)(64 + hit.Y)).ToString() + hit.X.ToString());
-                                WriteBorder(border);
-                                ComputerBoard[(int)hit.X, (int)hit.Y] = missSquare;
-                                playerTurn = false;
-                            }
-                        }
-                        endGame = true;
-                        foreach (Ship s in ComputerShips)
-                        {
-                            if (s.IsAlive)
-                                endGame = false;
-                        }
-                        if (endGame)
-                            WriteMess(border, " Wygrałeś");
-                    }
-                    else
-                    {
-                        do
-                        {
-                            Point cHit = new Point(rand.Next(1, boardSize), rand.Next(1, boardSize));
-                            if (PlayerBoard[(int)cHit.X, (int)cHit.Y] == emptySquare)
-                            {
-                                PlayerBoard[(int)cHit.X, (int)cHit.Y] = missSquare;
-                                WriteBorder(border);
-                                WriteMess(border, " Przeciwnk spudłował " + ((char)(64 + cHit.Y)).ToString() + cHit.X.ToString());
-                                WriteBorder(border);
-                                playerTurn = true;
-                            }
-                            else if (PlayerBoard[(int)cHit.X, (int)cHit.Y] == shipSquare)
-                            {
-                                PlayerBoard[(int)cHit.X, (int)cHit.Y] = hitSquare;
-                                WriteBorder(border);
-                                WriteMess(border, " Przeciwnk trafił " + ((char)(64 + cHit.Y)).ToString() + cHit.X.ToString());
-                                foreach (Ship s in PlayerShips)
-                                {
-                                    foreach (Point p in s.Coordinates)
-                                    {
-                                        if (p == cHit)
-                                        {
-                                            s.Hit();
-                                            if (!s.IsAlive)
-                                            {
-                                                WriteMess(border, " i zatopił nasz " + s.type.ToPL());
-                                                switch (s.position)
-                                                {
-                                                    case Ship.Position.Vertical:
-                                                        for (int i = -1; i < (int)s.type + 1; i++)
-                                                        {
-                                                            for (int j = -1; j < 2; j++)
-                                                            {
-                                                                if (s.StartPos.X + i < boardSize && s.StartPos.Y + j < boardSize
-                                                                    && s.StartPos.X + i >= 1 && s.StartPos.Y + j >= 1)
-                                                                {
-                                                                    PlayerBoard[(int)s.StartPos.X + i, (int)s.StartPos.Y + j] = missSquare;
-                                                                }
-                                                            }
-                                                        }
-                                                        foreach (Point p2 in s.Coordinates)
-                                                        {
-                                                            PlayerBoard[(int)p2.X, (int)p2.Y] = hitSquare;
-                                                        }
-                                                        break;
-                                                    case Ship.Position.Horizontal:
-                                                        for (int i = -1; i < 2; i++)
-                                                        {
-                                                            for (int j = -1; j < (int)s.type + 1; j++)
-                                                            {
-                                                                if (s.StartPos.X + i < boardSize && s.StartPos.Y + j < boardSize
-                                                                    && s.StartPos.X + i >= 1 && s.StartPos.Y + j >= 1)
-                                                                {
-                                                                    PlayerBoard[(int)s.StartPos.X + i, (int)s.StartPos.Y + j] = missSquare;
-                                                                }
-                                                            }
-                                                        }
-                                                        foreach (Point p2 in s.Coordinates)
-                                                        {
-                                                            PlayerBoard[(int)p2.X, (int)p2.Y] = hitSquare;
-                                                        }
-                                                        break;
-                                                }
-                                            }
-                                            WriteBorder(border);
-                                            PlayerBoard[(int)cHit.X, (int)cHit.Y] = hitSquare;
-                                            playerTurn = false;
-                                        }
-                                    }
-                                }
-                            }
-                        } while (!playerTurn);
-
-                        endGame = true;
-                        foreach (Ship s in PlayerShips)
-                        {
-                            if (s.IsAlive)
-                                endGame = false;
-                        }
-                        if (endGame)
-                            WriteMess(border, " Przegrałeś");
-                    }
-
-                    WriteMess(border, " Kliknij dowolny przycisk aby przejść dalej");
-                    WriteMess(border, " Kliknij 4 aby wyjść");
-                    WriteBorder(border);
-                    if (Console.ReadLine() == "4")
-                        break;
-
-                } while (!endGame);
-            }
-
             void StartGame()
             {
-                ResetShips(PlayerShips);
-                ResetShips(ComputerShips);
                 Console.Clear();
                 WriteBorder(border);
                 WriteMess(border, " Kto ma zacząć?");
@@ -622,46 +404,118 @@ namespace ConsoleAppBattleships
                 }
                 return new Point(x, y);
             }
-
-            void RandomizeShips(Ship[] ships, string[,] board)
+            void Game(bool playerTurn)
             {
-                foreach (Ship s in ships)
+                Battleships.ClearReservedSquares(PlayerBoardState);
+                Battleships.ClearReservedSquares(ComputerBoardState);
+                CreateEmptyBoard(ComputerBoard);
+                bool endGame = false;
+                do
                 {
-                    s.IsReady = false;
-                    int x = 0, y = 0;
-                    do
+                    Console.Clear();
+                    WriteBorder(border);
+                    WriteMess(border, " Twoja plansza");
+                    WriteBorder(border);
+                    DrawBoard(PlayerBoard,PlayerBoardState);
+                    WriteBorder(border);
+                    WriteMess(border, " Plansza przeciwnkia");
+                    WriteBorder(border);
+                    DrawHiddenBoard(ComputerBoard,ComputerBoardState);
+                    if (playerTurn)
                     {
-                        s.position = (Ship.Position)rand.Next(1, 3);
-                        switch (s.position)
+                        WriteBorder(border);
+                        WriteMess(border, " Podaj koordynaty");
+                        WriteBorder(border);
+                        Point hit = SetCoordinates();
+                        ShotResult result = Battleships.Shot(ComputerBoardState,ComputerShips,hit);
+                        if(result.state == Battleships.BoardState.Hit || result.state == Battleships.BoardState.Miss)
                         {
-                            case Ship.Position.Vertical:
-                                y = rand.Next(1, boardSize);
-                                x = rand.Next(1, boardSize - (int)s.type);
-                                break;
-                            case Ship.Position.Horizontal:
-                                x = rand.Next(1, boardSize);
-                                y = rand.Next(1, boardSize - (int)s.type);
-                                break;
+                            WriteBorder(border);
+                            WriteMess(border, " Już tam strzelałeś !!!");
+                            WriteMess(border, " Zmarnowany strzał " + ((char)(64 + hit.Y)).ToString() + hit.X.ToString());
+                            WriteBorder(border);
+                            playerTurn = false;
                         }
-                    } while (!CheckPlaceOnBoard(s, board, x, y, false));
-                    s.StartPos = new Point(x, y);
-                    PlaceShipOnBoard(s, board);
-                }
+                        else if (result.state == Battleships.BoardState.Empty)
+                        {
+                            WriteBorder(border);
+                            WriteMess(border, " Pudło " + ((char)(64 + hit.Y)).ToString() + hit.X.ToString());
+                            WriteBorder(border);
+                            playerTurn = false;
+                        }
+                        else
+                        {
+                            WriteBorder(border);
+                            WriteMess(border, " Trafiony " + ((char)(64 + hit.Y)).ToString() + hit.X.ToString());
+                            if (result.IsShipDestroyed)
+                            {
+                                WriteMess(border, " i zatopiony " + result.ship.type.ToPL());
+                            }
+                            WriteBorder(border);
+                            playerTurn = true;                           
+                        }
+                        endGame = true;
+                        foreach (Ship s in ComputerShips)
+                        {
+                            if (s.IsAlive)
+                                endGame = false;
+                        }
+                        if (endGame)
+                            WriteMess(border, " Wygrałeś");
+                    }
+                    else
+                    {
+                        do
+                        {
+                            Point hit = new Point(rand.Next(1, boardSize), rand.Next(1, boardSize));
+                            ShotResult result = Battleships.Shot(PlayerBoardState, PlayerShips, hit);
+                            if (result.state == Battleships.BoardState.Empty)
+                            {
+                                WriteBorder(border);
+                                WriteMess(border, " Przeciwnk spudłował " + ((char)(64 + hit.Y)).ToString() + hit.X.ToString());
+                                WriteBorder(border);
+                                playerTurn = true;
+                            }
+                            else if (result.state == Battleships.BoardState.Ship)
+                            {
+                                WriteBorder(border);
+                                WriteMess(border, " Przeciwnk trafił " + ((char)(64 + hit.Y)).ToString() + hit.X.ToString());
+                                if(result.IsShipDestroyed)
+                                {
+                                    WriteMess(border, " i zatopił nasz " + result.ship.type.ToPL());
+                                }
+                                WriteBorder(border);
+                                playerTurn = false;                               
+                            }
+                        } while (!playerTurn);
+
+                        endGame = true;
+                        foreach (Ship s in PlayerShips)
+                        {
+                            if (s.IsAlive)
+                                endGame = false;
+                        }
+                        if (endGame)
+                            WriteMess(border, " Przegrałeś");
+                    }
+
+                    WriteMess(border, " Kliknij dowolny przycisk aby przejść dalej");
+                    if (!endGame)
+                    {
+                        WriteMess(border, " Kliknij 4 aby wyjść");
+                    } 
+                    WriteBorder(border);
+                    if (Console.ReadLine() == "4")
+                        break;
+
+                } while (!endGame);
             }
 
-            void ResetShips(Ship [] ships)
+            void PlaceShipsOnBoard(Ship[] ships, string[,] board,Battleships.BoardState [,] boardStates)
             {
                 foreach (Ship s in ships)
                 {
-                    s.Reset();
-                }
-            }
-
-            void PlaceShipsOnBoard(Ship[] ships, string[,] board)
-            {
-                foreach (Ship s in ships)
-                {
-                    DrawBoard(board);
+                    DrawBoard(board, boardStates);
                     bool correct = false;
                     while (!correct)
                     {
@@ -702,19 +556,23 @@ namespace ConsoleAppBattleships
                             break;
                         }
                         Console.Clear();
-                        DrawBoard(board);
+                        DrawBoard(board, boardStates);
                         WriteBorder(border);
                         WriteMess(border, " Wybierz koordynaty dla " + s.type.ToPL());
                         Point p = SetCoordinates();
-                        if (CheckPlaceOnBoard(s, board, (int)p.X, (int)p.Y, true))
+                        if (Battleships.CheckPlaceOnBoard(s, boardStates,(int)p.X,(int)p.Y))
                         {
                             s.StartPos = p;
-                            PlaceShipOnBoard(s, board);
+                            Battleships.PlaceShipOnBoard(s, boardStates);
                             correct = true;
                         }
                         else
                         {
                             correct = false;
+                            WriteBorder(border);
+                            WriteMess(border, " Statek poza planszą lub");
+                            WriteMess(border, " za blisko innego statku, wybierz ponownie");
+                            WriteBorder(border);
                         }
                     }
                     if (option3 == "3")
@@ -722,50 +580,7 @@ namespace ConsoleAppBattleships
                 }
             }
 
-            void PlaceShipOnBoard(Ship ship, string[,] board)
-            {
-                int x = (int)ship.StartPos.X;
-                int y = (int)ship.StartPos.Y;
-                switch (ship.position)
-                {
-                    case Ship.Position.Vertical:
-                        for (int i = -1; i < (int)ship.type + 1; i++)
-                        {
-                            for (int j = -1; j < 2; j++)
-                            {
-                                if (x + i < boardSize && y + j < boardSize
-                                    && x + i >= 1 && y + j >= 1)
-                                {
-                                    board[x + i, y + j] = reservedSquare;
-                                }
-                            }
-                        }
-                        foreach (Point p2 in ship.Coordinates)
-                        {
-                            board[(int)p2.X, (int)p2.Y] = shipSquare;
-                        }
-                        ship.IsReady = true;
-                        break;
-                    case Ship.Position.Horizontal:
-                        for (int i = -1; i < 2; i++)
-                        {
-                            for (int j = -1; j < (int)ship.type + 1; j++)
-                            {
-                                if (x + i < boardSize && y + j < boardSize
-                                    && x + i >= 1 && y + j >= 1)
-                                {
-                                    board[x + i, y + j] = reservedSquare;
-                                }
-                            }
-                        }
-                        foreach (Point p2 in ship.Coordinates)
-                        {
-                            board[(int)p2.X, (int)p2.Y] = shipSquare;
-                        }
-                        ship.IsReady = true;
-                        break;
-                }
-            }
+           
 
             void WriteBorder(int n)
             {

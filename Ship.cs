@@ -69,6 +69,7 @@ namespace ConsoleAppBattleships
         {
             HitCount = 0;
             IsAlive = true;
+            IsReady = false;
         }
         public enum Position
         {
